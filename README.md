@@ -12,8 +12,10 @@ a list of many resource to learn how privilege escalation in Linux system
     * [Network enumeration](#network-enumeration) 
     * [Password hunting](#password-hunting)
     * [automated Tools](#automated-tools)
-  
-- [SUID](#suid)
+- [Looting for password](#looting-for-password)
+    *
+	*
+	*
 
 - [ETC](#etc)
 
@@ -182,14 +184,57 @@ $ find / -name id_rsa 2> /dev/null
  * [ LinPEAS - Linux Privilege Escalation Awesome Script ](https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite/tree/master/linPEAS)
  * [ LinEnum ](https://github.com/rebootuser/LinEnum)
  * [ LES -Linux Exploit Suggester ](https://github.com/mzet-/linux-exploit-suggester)
+ * [ LES2 -Linux Exploit Suggester 2 ](https://github.com/jondonas/linux-exploit-suggester-2)
  * [ Linux privilege escalation check script ](https://github.com/sleventyeleven/linuxprivchecker)
 
 ---
-# SUID
 
--
--
--
+# Looting for passwords 
+
+## Files containing passwords
+
+``` 
+grep --color=auto -rnw '/' -ie "PASSWORD" --color=always 2> /dev/null
+find . -type -f -exec grep -i -I "PASSWORD" {} /dev/null \;
+```
+
+File that were edited in the last 10 minutes 
+```
+find / -mmin -19 2>/dev/null | grep -Ev "^/proc"
+```
+
+in history command 
+```
+cat .bash_history | grep -i "password"
+```
+in memory passwords 
+```
+strings /dev/mem -n10 | grep -i PASS
+```
+check permision of shadow file and if you have read permision LUKY LUK so use this command and read hash password 
+```
+cat /etc/shadow 
+```
+We can crack the password using join the ripper :
+```
+unshadow passwd shadow > unshadowd.txt
+join --rules --wordlist=/path/to/wordlist/file.txt unshadowed.txt
+```
+
+## ssh keys 
+
+```
+find / -name authorized_keys 2> /dev/null
+find / -name id_rsa 2> /dev/null
+```
+
+search within history strings that cnotain ssh / telnet / mysql
+```
+grep ^ssh /home/*/.hist
+grep ^telnet /home/*/.hist
+grep ^mysql /home/*/.hist
+```
+
 
 # ETC
 
