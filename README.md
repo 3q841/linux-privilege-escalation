@@ -12,10 +12,7 @@ a list of many resource to learn how privilege escalation in Linux system
     * [Network enumeration](#network-enumeration) 
     * [Password hunting](#password-hunting)
     * [automated Tools](#automated-tools)
-- [Looting for password](#looting-for-password)
-    *
-	*
-	*
+- [Looting for passwords](#looting-for-passwords)
 
 - [ETC](#etc)
 
