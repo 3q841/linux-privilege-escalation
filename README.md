@@ -326,7 +326,7 @@ so line by line execiute in the command line and done, we got that.
 ## sub tools
 
 sometime is not Enough to find a file that have SUID set and we need more thing like what library or sub tools the command  is using
-for this purpose. so we need this execiute this command :
+for this purpose. so we need executing this :
 ```
 strace <name file that have SUID set> 2>&1 | grep -i -E "open|access|no such file"
 ```
